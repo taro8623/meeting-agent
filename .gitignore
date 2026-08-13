@@ -6,3 +6,6 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+# 提出用メール文面 (ローカルのみ)
+SUBMISSION_EMAIL.md
