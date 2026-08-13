@@ -1,0 +1,25 @@
+{
+  "name": "meeting-agent",
+  "version": "0.1.0",
+  "description": "会議構造化エージェント — 病院向け要件定義会議 の構造化と未確定事項の可視化",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "session": "tsx src/cli/session.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  }
+}

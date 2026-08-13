@@ -1,0 +1,297 @@
+{
+  "_description": "MockClient用の事前定義応答。チャンクIDをキーに、そのチャンク処理時にLLMが返すべきツール呼び出し(apply_process_patch)を保持する。実LLMを使わず 全機能検証・デモを可能にするための仕組み。",
+  "_note": "Zod superRefine制約 (unknown Step→OpenQuestion必須 / confirmed Step→sources必須 / conflict→conflictingStatements2件以上 / Edge→既存Step参照) を全て満たすようパッチを構成している。",
+
+  "chunk_001": {
+    "toolName": "apply_process_patch",
+    "patches": [
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s1",
+          "label": "手術後の器材回収 (専用カートでCSSDへ)",
+          "actor": "看護師",
+          "system": null,
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "手術が終わったらすぐに、看護師が使用済み器材をコンテナに入れて、専用のカートで中材まで運んできます"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s2",
+          "label": "数量チェック・欠品確認",
+          "actor": "中材 受入担当",
+          "system": null,
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "受入担当が返却リストと器材をつき合わせて、数量チェックをします"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s3",
+          "label": "一次洗浄 (手作業)",
+          "actor": "中材 洗浄担当",
+          "system": null,
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "トレーから外して、まず一次洗浄を手作業でやります。血液や組織を落とすためですね"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s4",
+          "label": "自動洗浄・熱水消毒 (ウォッシャーディスインフェクター)",
+          "actor": "中材 洗浄担当",
+          "system": "ウォッシャーディスインフェクター",
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "ウォッシャーディスインフェクターに入れて、自動洗浄と熱水消毒を行います"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s5",
+          "label": "セット組立 (200種類の構成表参照)",
+          "actor": "中材 組立担当",
+          "system": "構成表 (現状は紙ベース、タブレット化予定)",
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "佐藤",
+              "timestamp": null,
+              "quote": "組立担当は構成表を見ながら、正しい器材を正しい順序で組むんです"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s6",
+          "label": "包装・ラベル貼付",
+          "actor": "中材 組立担当",
+          "system": null,
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "セットが完成したら、滅菌バッグや不織布で包装して、内容表示ラベルを貼ります"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s7",
+          "label": "滅菌 (オートクレーブ 134度7分 / EOG 8時間・週2回)",
+          "actor": "中材 滅菌担当",
+          "system": "オートクレーブ / EOG滅菌器",
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_001",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "基本はオートクレーブ、つまり高圧蒸気滅菌です。134度で7分"
+            }
+          ]
+        }
+      },
+      { "op": "add_edge", "edge": { "from": "s1", "to": "s2", "label": null, "confidence": "confirmed" } },
+      { "op": "add_edge", "edge": { "from": "s2", "to": "s3", "label": null, "confidence": "confirmed" } },
+      { "op": "add_edge", "edge": { "from": "s3", "to": "s4", "label": null, "confidence": "confirmed" } },
+      { "op": "add_edge", "edge": { "from": "s4", "to": "s5", "label": null, "confidence": "confirmed" } },
+      { "op": "add_edge", "edge": { "from": "s5", "to": "s6", "label": null, "confidence": "confirmed" } },
+      { "op": "add_edge", "edge": { "from": "s6", "to": "s7", "label": null, "confidence": "confirmed" } }
+    ]
+  },
+
+  "chunk_002": {
+    "toolName": "apply_process_patch",
+    "patches": [
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s8",
+          "label": "滅菌済み器材の保管・ピッキング",
+          "actor": "中材 ピッキング担当",
+          "system": "手術予定表 (電子カルテ由来)",
+          "phase": "as_is",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_002",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "前日の夕方に翌日の予定が確定するので、それを見て翌朝ピッキングします"
+            }
+          ]
+        }
+      },
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s9",
+          "label": "滅菌完了後の実績登録",
+          "actor": null,
+          "system": null,
+          "phase": "as_is",
+          "confidence": "unknown",
+          "sources": []
+        }
+      },
+      {
+        "op": "add_edge",
+        "edge": { "from": "s7", "to": "s8", "label": null, "confidence": "confirmed" }
+      },
+      {
+        "op": "add_edge",
+        "edge": { "from": "s7", "to": "s9", "label": "滅菌完了後", "confidence": "unknown" }
+      },
+      {
+        "op": "add_question",
+        "question": {
+          "id": "q1",
+          "question": "滅菌完了後の実績登録は、誰が、どのシステムに、どのタイミングで行うか",
+          "relatedStepIds": ["s9"],
+          "category": "actor",
+          "conflictingStatements": [],
+          "status": "open",
+          "answer": null,
+          "answeredAt": null,
+          "raisedAtChunk": "chunk_002"
+        }
+      },
+      {
+        "op": "add_question",
+        "question": {
+          "id": "q2",
+          "question": "滅菌後の使用期限マスタデータ (滅菌方式×包装種別ごとの期限) をどう管理するか",
+          "relatedStepIds": ["s8"],
+          "category": "system",
+          "conflictingStatements": [],
+          "status": "open",
+          "answer": null,
+          "answeredAt": null,
+          "raisedAtChunk": "chunk_002"
+        }
+      },
+      {
+        "op": "add_question",
+        "question": {
+          "id": "q3",
+          "question": "保管中の包装破損が発生した際の運用フロー (再滅菌の判断・記録)",
+          "relatedStepIds": ["s8"],
+          "category": "trigger",
+          "conflictingStatements": [],
+          "status": "open",
+          "answer": null,
+          "answeredAt": null,
+          "raisedAtChunk": "chunk_002"
+        }
+      }
+    ]
+  },
+
+  "chunk_003": {
+    "toolName": "apply_process_patch",
+    "patches": [
+      {
+        "op": "add_step",
+        "step": {
+          "id": "s10",
+          "label": "クリニカルパス最終日の退院許可オーダー自動発行 (2026-10 パイロット/心臓血管外科1病棟, 2026-12 全病棟展開)",
+          "actor": "電子カルテ (自動)",
+          "system": "電子カルテ (パス機能)",
+          "phase": "to_be",
+          "confidence": "confirmed",
+          "sources": [
+            {
+              "chunkId": "chunk_003",
+              "speaker": "佐藤",
+              "timestamp": null,
+              "quote": "来月10月から運用開始という方針になりました。パスの最終日に、退院許可オーダーが自動で発行される仕組みです"
+            }
+          ]
+        }
+      },
+      {
+        "op": "flag_conflict",
+        "questionId": "q1",
+        "statements": [
+          {
+            "speaker": "田中",
+            "claim": "看護師が入力しているはず (看護記録から滅菌実績へ紐づき、実質的に看護師が入力していると理解)",
+            "source": {
+              "chunkId": "chunk_003",
+              "speaker": "田中",
+              "timestamp": null,
+              "quote": "うちも看護師が入力しているはずです。手術終了時に、使ったセットと数量を看護記録に書いていますし"
+            }
+          },
+          {
+            "speaker": "佐藤",
+            "claim": "中材の部門システムで担当者が入力している",
+            "source": {
+              "chunkId": "chunk_003",
+              "speaker": "佐藤",
+              "timestamp": null,
+              "quote": "滅菌完了の実績登録は、中材の部門システムで担当者が入力していると聞いています"
+            }
+          },
+          {
+            "speaker": "伊藤",
+            "claim": "中材の若手スタッフからは「うちでは入力していない」と証言あり",
+            "source": {
+              "chunkId": "chunk_003",
+              "speaker": "伊藤",
+              "timestamp": null,
+              "quote": "先週、中材の若手スタッフに聞いたら「うちでは入力してない」と言っていました"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
