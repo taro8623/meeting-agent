@@ -67,12 +67,12 @@ npm test                                        # 55件全パス
 npm run session -- --new "デモ会議"
 npm run session -- --append data/sample/chunk_01.txt
 npm run session -- --render
-open .sessions/*/outputs/summary.md
+open ~/.local/share/meeting-agent/sessions/*/outputs/summary.md
 ```
 
 **API キー不要 / 追加インストール不要 / ネット不要** (Mock モード時)。
 
-**検証済み**: 実行ログ `~/dev/meeting-agent/.sessions/sess_20260807003445_764f3cc0/` に残る。
+**検証済み**: 実行ログ `~/.local/share/meeting-agent/sessions/<session-id>/` に残る (XDG Base Directory Specification 準拠)。
 
 ---
 
@@ -81,7 +81,8 @@ open .sessions/*/outputs/summary.md
 | 対応 | 内容 |
 |---|---|
 | `.env` に相当するファイル | **存在しない** (API キーが不要な設計) |
-| `.gitignore` | `node_modules/`, `dist/`, `.sessions/`, `.env`, `.env.local`, `*.log`, `.DS_Store`, `coverage/` |
+| `.gitignore` | `node_modules/`, `dist/`, `.sessions/` (下位互換用), `.env`, `.env.local`, `*.log`, `.DS_Store`, `coverage/` |
+| セッションデータの保存先 | XDG Base Directory 準拠 (`~/.local/share/meeting-agent/sessions/`)。リポ内には一切保存しない |
 | 従量課金 SDK | **導入なし** (`@anthropic-ai/sdk`, `openai` パッケージ 0 個) |
 | ダミー文字起こしの匿名化 | 「A病院」に完全抽象化 / 参加者は仮名 (田中/佐藤/鈴木/伊藤) |
 
@@ -118,10 +119,10 @@ open .sessions/*/outputs/summary.md
 | JSONL 形式で 実行トレースを保存 | `src/session/store.ts:126-134` (`appendLog`) |
 | CLI 実行ごとに全 turn のログ記録 | `src/cli/session.ts:143-153` |
 | model.json 書き込み前に自動バックアップ | `src/session/store.ts:105-107` |
-| セッションIDで完全隔離 (別セッションを壊さない) | `.sessions/<id>/` ディレクトリ構造 |
+| セッションIDで完全隔離 (別セッションを壊さない) | `~/.local/share/meeting-agent/sessions/<id>/` (XDG準拠) |
 | チャンクは chunks/ に元テキストごと保存 (再実行可) | `src/session/store.ts:118-125` (`saveChunk`) |
 
-**ログ形式例** (`.sessions/<id>/logs/run_2026-08-07.jsonl`):
+**ログ形式例** (`~/.local/share/meeting-agent/sessions/<id>/logs/run_2026-08-07.jsonl`):
 
 ```jsonl
 {"timestamp":"...","action":"append","chunkId":"chunk_001","llm":"MockClient (課金ゼロ)","turns":[{"turn":1,"latencyMs":0,"inputTokens":0,"outputTokens":0,"costUsd":0,"toolCallName":"apply_process_patch","patchCount":13,"validationOk":true}],"applied":true,"totalCostUsd":0}

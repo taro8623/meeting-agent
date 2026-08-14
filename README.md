@@ -63,7 +63,7 @@ npm run session -- --append data/sample/chunk_03.txt
 npm run session -- --render
 
 # 4. 出力を開く
-open .sessions/*/outputs/summary.md
+open ~/.local/share/meeting-agent/sessions/*/outputs/summary.md
 ```
 
 ### その他のコマンド
@@ -121,7 +121,7 @@ npm run session -- --append data/sample/chunk_01.txt   # シナリオA
 npm run session -- --append data/sample/chunk_02.txt   # シナリオB
 npm run session -- --append data/sample/chunk_03.txt   # シナリオC
 npm run session -- --render
-open .sessions/*/outputs/summary.md
+open ~/.local/share/meeting-agent/sessions/*/outputs/summary.md
 ```
 
 ---
@@ -140,7 +140,7 @@ flowchart TD
     Mock[MockClient<br/>課金ゼロ・オフライン]
     Ollama[OllamaClient<br/>localhost:11434 直接fetch]
     Schema[ProcessModel + Zod<br/>src/schema/processModel.ts<br/>superRefine 4制約]
-    Files[(.sessions/<id>/<br/>model.json + logs/)]
+    Files[(XDG_DATA_HOME/meeting-agent/sessions/&lt;id&gt;/<br/>model.json + logs/)]
     Render[Renderer<br/>src/render/markdown.ts]
     Output[📄 Markdown + Mermaid<br/>outputs/summary.md]
 
@@ -171,7 +171,7 @@ flowchart TD
 | **Schema** | 唯一の正 (SSOT)。ProcessModel + Zod superRefine 4制約 | `src/schema/processModel.ts` |
 | **Store** | JSON永続化 + バックアップ | `src/session/store.ts` |
 | **Renderer** | ProcessModel → Markdown + Mermaid | `src/render/markdown.ts` |
-| **データ保存** | ローカルファイル (SQLite/DB不使用、Git管理不要) | `.sessions/<id>/` |
+| **データ保存** | XDG準拠 ローカルファイル (SQLite/DB不使用、Git管理不要) | `$XDG_DATA_HOME/meeting-agent/sessions/<id>/` (default: `~/.local/share/meeting-agent/sessions/<id>/`) |
 
 ---
 
@@ -187,7 +187,7 @@ flowchart TD
    - **成功** → 6 へ
    - **失敗** → エラー内容を日本語要約し **Turn 2** で LLM に再挑戦させる (最大1回)
    - **Turn 2 も失敗** → **元の Model を維持** して安全終了 (過去の蓄積を絶対に壊さない)
-6. **保存** — `.sessions/<id>/model.json` にバックアップ経由で書込み
+6. **保存** — `$XDG_DATA_HOME/meeting-agent/sessions/<id>/model.json` にバックアップ経由で書込み
 7. **最終結果を返す** — 差分サマリ (追加された Step 数、未確定質問数等) を CLI に表示
 8. **`--render` 実行時** — ProcessModel → Markdown + Mermaid に変換して `outputs/summary.md` を生成
 
@@ -222,7 +222,7 @@ npm run session -- --append data/sample/chunk_01.txt
 npm run session -- --append data/sample/chunk_02.txt
 npm run session -- --append data/sample/chunk_03.txt
 npm run session -- --render
-open .sessions/*/outputs/summary.md
+open ~/.local/share/meeting-agent/sessions/*/outputs/summary.md
 ```
 
 ### Ollama で本番モードを試す場合 (任意・課金なし)
@@ -253,6 +253,8 @@ LLM_MODE=ollama npm run session -- --append data/sample/chunk_01.txt
 | `OLLAMA_MODEL` | `llama3.1:8b` | Ollama 使用時のモデル名 (`llama3.2:3b` 等に変更可) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama サーバーの URL |
 | `OLLAMA_TIMEOUT_MS` | `300000` (5分) | Ollama タイムアウト (初回モデルロードで時間がかかる) |
+| `XDG_DATA_HOME` | `~/.local/share` | XDG Base Directory 準拠のデータディレクトリ。セッション保存先は `$XDG_DATA_HOME/meeting-agent/sessions/` |
+| `MEETING_AGENT_SESSIONS_DIR` | (未設定) | セッション保存先を明示指定 (XDG より優先)。テスト・開発時に `/tmp/xxx` 等に隔離する用途 |
 
 ---
 
@@ -284,7 +286,7 @@ LLM_MODE=ollama npm run session -- --append data/sample/chunk_01.txt
    `update_step` / `resolve_question` で「上書き」のみ。
 
 5. **各実行の全トレースを JSONL 永続化**
-   `.sessions/<id>/logs/run_<日付>.jsonl` に 実行毎の
+   `$XDG_DATA_HOME/meeting-agent/sessions/<id>/logs/run_<日付>.jsonl` に 実行毎の
    latencyMs / inputTokens / outputTokens / costUsd / validationOk / patchCount を記録。
    `costUsd` は常に `0` (Mock も Ollama も従量課金なし)。将来 有料 API を
    追加した場合も 同じログ形式で コスト可視化できる。
@@ -400,7 +402,7 @@ MVP では **`apply_process_patch` の 1 つのみ**。SPEC 原文には
 
 ### ログ形式
 
-`.sessions/<id>/logs/run_<日付>.jsonl`:
+`$XDG_DATA_HOME/meeting-agent/sessions/<id>/logs/run_<日付>.jsonl`:
 
 ```jsonl
 {"timestamp":"2026-08-07T00:34:55Z","action":"append","chunkId":"chunk_001","llm":"MockClient (課金ゼロ)","turns":[{"turn":1,"latencyMs":0,"inputTokens":0,"outputTokens":0,"costUsd":0,"toolCallName":"apply_process_patch","patchCount":13,"validationOk":true}],"applied":true,"totalCostUsd":0}
@@ -451,7 +453,8 @@ meeting-agent/
 │  │  └─ fileSource.ts        チャンク読込
 │  ├─ render/markdown.ts      Markdown + Mermaid
 │  └─ cli/session.ts          CLI エントリ
-└─ .sessions/                 実行時に自動生成 (.gitignore)
+
+(セッションデータは XDG 準拠: `~/.local/share/meeting-agent/sessions/` 配下、リポ内には保存されない)
 ```
 
 ### Claude Code / AI開発ツールの使い方

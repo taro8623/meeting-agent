@@ -14,14 +14,21 @@ import {
   appendFileSync,
 } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 import { randomUUID } from "crypto";
 
 /**
- * セッションのファイルベース永続化。
+ * セッションのファイルベース永続化 (XDG Base Directory Specification 準拠)。
  * DBは使わない (SPEC §2「ファイルベース、DBは使わない」)。
  *
+ * 保存先の解決順:
+ *   1. 環境変数 MEETING_AGENT_SESSIONS_DIR がセットされていればそれ (テスト・開発用)
+ *   2. 環境変数 XDG_DATA_HOME があれば $XDG_DATA_HOME/meeting-agent/sessions
+ *   3. デフォルト $HOME/.local/share/meeting-agent/sessions
+ *
  * ディレクトリ構造:
- *   .sessions/
+ *   <sessions_root>/
+ *     last_session.txt      最新セッションID (--session省略時に使用)
  *     <session_id>/
  *       meta.json           セッションメタ情報
  *       model.json          ProcessModel (常に検証済みの状態を保存)
@@ -31,9 +38,19 @@ import { randomUUID } from "crypto";
  *         chunk_002.txt
  *       logs/
  *         run_<iso>.jsonl   実行トレース
+ *       outputs/
+ *         summary.md        Markdown+Mermaid レンダリング結果
  */
 
-const SESSIONS_ROOT = ".sessions";
+/** XDG準拠でセッション保存ルートを解決する (呼び出し毎に評価 = テストで env vars 上書き可能) */
+function sessionsRoot(): string {
+  if (process.env.MEETING_AGENT_SESSIONS_DIR) {
+    return process.env.MEETING_AGENT_SESSIONS_DIR;
+  }
+  const xdgDataHome =
+    process.env.XDG_DATA_HOME || join(homedir(), ".local", "share");
+  return join(xdgDataHome, "meeting-agent", "sessions");
+}
 
 export interface SessionMeta {
   sessionId: string;
@@ -51,7 +68,7 @@ export interface Session {
 
 export function newSession(title: string): Session {
   const sessionId = generateSessionId();
-  const path = join(SESSIONS_ROOT, sessionId);
+  const path = join(sessionsRoot(), sessionId);
   mkdirSync(join(path, "chunks"), { recursive: true });
   mkdirSync(join(path, "logs"), { recursive: true });
   mkdirSync(join(path, "outputs"), { recursive: true });
@@ -69,7 +86,7 @@ export function newSession(title: string): Session {
   writeFileSync(join(path, "model.json"), JSON.stringify(model, null, 2), "utf-8");
 
   // last_session.txt に最新セッションIDを記録 (--session省略時に使用)
-  writeFileSync(join(SESSIONS_ROOT, "last_session.txt"), sessionId, "utf-8");
+  writeFileSync(join(sessionsRoot(), "last_session.txt"), sessionId, "utf-8");
 
   return { meta, model, path };
 }
@@ -82,7 +99,7 @@ export function loadSession(sessionId?: string): Session {
       "セッションが指定されていません。--session <id> か --new で新規作成してください。"
     );
   }
-  const path = join(SESSIONS_ROOT, id);
+  const path = join(sessionsRoot(), id);
   if (!existsSync(path)) {
     throw new Error(`セッション "${id}" が見つかりません (${path})`);
   }
@@ -123,7 +140,7 @@ export function saveSession(session: Session, updated: ProcessModel): Session {
     "utf-8"
   );
 
-  writeFileSync(join(SESSIONS_ROOT, "last_session.txt"), meta.sessionId, "utf-8");
+  writeFileSync(join(sessionsRoot(), "last_session.txt"), meta.sessionId, "utf-8");
 
   return { meta, model: validated, path: session.path };
 }
@@ -149,13 +166,13 @@ export function appendLog(session: Session, entry: Record<string, unknown>): voi
 /** セッション一覧 */
 export function listSessions(): SessionMeta[] {
   ensureSessionsRoot();
-  const entries = readdirSync(SESSIONS_ROOT).filter((name) => {
-    const p = join(SESSIONS_ROOT, name);
+  const entries = readdirSync(sessionsRoot()).filter((name) => {
+    const p = join(sessionsRoot(), name);
     return statSync(p).isDirectory();
   });
   return entries
     .map((id) => {
-      const metaPath = join(SESSIONS_ROOT, id, "meta.json");
+      const metaPath = join(sessionsRoot(), id, "meta.json");
       if (!existsSync(metaPath)) return null;
       return JSON.parse(readFileSync(metaPath, "utf-8")) as SessionMeta;
     })
@@ -164,11 +181,11 @@ export function listSessions(): SessionMeta[] {
 }
 
 function ensureSessionsRoot(): void {
-  if (!existsSync(SESSIONS_ROOT)) mkdirSync(SESSIONS_ROOT, { recursive: true });
+  if (!existsSync(sessionsRoot())) mkdirSync(sessionsRoot(), { recursive: true });
 }
 
 function readLastSessionId(): string | null {
-  const p = join(SESSIONS_ROOT, "last_session.txt");
+  const p = join(sessionsRoot(), "last_session.txt");
   if (!existsSync(p)) return null;
   return readFileSync(p, "utf-8").trim() || null;
 }
